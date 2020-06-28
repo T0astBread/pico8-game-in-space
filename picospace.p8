@@ -73,6 +73,8 @@ plstasis=nil
 plavel=0
 plaaccel=.006
 
+thrust_parts={}
+
 function _update()
 	b0=btn(0)
 	b1=btn(1)
@@ -98,6 +100,26 @@ function _update()
 		pllvel=v2_add(
 			pllvel,
 			v2_mul(v2_rot(angle),-.4))
+			
+		partpos=v2_add(
+			plpos,
+			v2_mul(v2_rot(plrot),2))
+		for i=0,1 do
+			angle=v2_angle(pllvel)
+				+rnd(.05)-.0025
+				+(i-.5)*.1
+				+.25
+			vel=v2_mul(
+				v2_rot(angle),
+				v2_mag(pllvel)*.3)
+			pos=v2_add(
+				partpos,
+				v2_mul(vel,1.2))
+			add(thrust_parts,{
+				pos=pos,
+				vel=vel
+			})
+		end
 	end
 	
 	pllvel=v2_clamp(pllvel,6)
@@ -109,10 +131,24 @@ function _update()
 	plavel=min(plavel,.75)
 	plrot+=plavel
 	plavel=plavel*.85
+	
+	
+	for part in all(thrust_parts) do
+		part.pos=v2_add(part.pos,part.vel)
+		part.vel=v2_mul(part.vel,.9)
+		partmag=v2_mag(part.vel)
+		if(partmag < 1) then
+			del(thrust_parts,part)
+		end
+	end
 end
 
 function _draw()
 	cls(0)
+	
+	for part in all(thrust_parts) do
+		mappset(part.pos,12)
+	end
 	
 	r={
 		.0625,-.0625,
@@ -126,15 +162,6 @@ function _draw()
 			plpos))
 	end
 	
-	if not(plstasis) then
-		pdelta=v2_mul(pllvel,-1)
-		for i=4,5 do
-			pi=p[i]
-			pi_=v2_add(pi,pdelta)
-			mapline(pi,pi_,12)
-		end
-	end
-	
 	for i=1,3 do
 		p1=p[i]
 		if(i==3) p2=p[1] else p2=p[i+1]
@@ -143,14 +170,30 @@ function _draw()
 end
 
 function mapline(a,b,col)
-	for x=-128,128,128 do
-		for y=-128,128,128 do
-			line(
-				a.x+x,
-				a.y+y,
-				b.x+x,
-				b.y+y,
-				col)
+	mapdo(function(x,y)
+		line(
+			a.x+x,
+			a.y+y,
+			b.x+x,
+			b.y+y,
+			col)
+		end)
+end
+
+function mappset(v,col)
+	mapdo(function(x,y)
+		pset(
+			v.x+x,
+			v.y+y,
+			col)
+		end)
+end
+
+function mapdo(fn)
+	dimen=128
+	for x=-dimen,dimen,dimen do
+		for y=-dimen,dimen,dimen do
+			fn(x,y)
 		end
 	end
 end

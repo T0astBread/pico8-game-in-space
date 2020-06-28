@@ -85,7 +85,7 @@ campos=v2(0,0)
 stars={}
 for x=1,64 do
 	for y=1,64 do
-		if(rnd(3) > 2.7) then
+		if(rnd(3) > 2.8) then
 			add(stars,v2(
 				rnd(4),
 				rnd(4)))

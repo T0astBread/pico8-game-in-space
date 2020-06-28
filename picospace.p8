@@ -238,9 +238,14 @@ function draw_stars_partial(
 			local idx=ix*64+iy
 			local star=stars[idx]
 			if(star) then
-				pset(
+				local p=v2(
 					flrx+px*4+star.x,
-					flry+py*4+star.y,
+					flry+py*4+star.y)
+				local p2=v2_add(
+					p, v2_mul(pllvel,-.85))
+				line(
+					p.x,p.y,
+					p2.x,p2.y,
 					5)
 			end
 		end

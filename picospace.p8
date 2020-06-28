@@ -166,12 +166,18 @@ function _draw()
 			plpos))
 	end
 	
-	if not(plstasis) then
-		pdelta=v2_mul(pllvel,-1)
+	if btn(2) then
+		local col=12
+		local mul=-1
+		if(plstasis) then
+			col=6
+			mul=-.5
+		end
+		pdelta=v2_mul(pllvel,mul)
 		for i=4,5 do
 			pi=p[i]
 			pi_=v2_add(pi,pdelta)
-			mapline(pi,pi_,12)
+			mapline(pi,pi_,col)
 		end
 	end
 	

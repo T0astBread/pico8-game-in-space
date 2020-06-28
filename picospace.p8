@@ -64,6 +64,14 @@ function v2_angle(vec)
 	return atan2(vec.x,-vec.y)
 end
 
+function v2_flr(vec)
+	return v2(flr(vec.x),flr(vec.y))
+end
+
+function v2_ceil(vec)
+	return v2(ceil(vec.x),ceil(vec.y))
+end
+
 -->8
 plpos=v2(100,100)
 pllvel=v2(0,0)
@@ -72,7 +80,26 @@ plstasis=nil
 plavel=0
 plaaccel=.006
 
+campos=v2(0,0)
+
+stars={}
+for x=1,64 do
+	for y=1,64 do
+		if(rnd(3) > 2.7) then
+			add(stars,v2(
+				rnd(4),
+				rnd(4)))
+		else
+			add(stars,false)
+		end
+	end
+end
+
 function _update()
+	campos=v2(
+		peek2(0x5f28),
+		peek2(0x5f2a))
+	
 	b0=btn(0)
 	b1=btn(1)
 	if(b0 and b1) then
@@ -91,7 +118,7 @@ function _update()
 	if(btn(2)) then
 		if plstasis then
 			angle=plstasis
-			mul=-.25
+			mul=-.15
 		else
 			angle=plrot
 			mul=-.4
@@ -102,19 +129,29 @@ function _update()
 	end
 	
 	pllvel=v2_clamp(pllvel,6)
-	plpos=v2_mod(
-		v2_add(plpos,pllvel),
-		128
-	)
+	plpos=v2_add(plpos,pllvel)
 	pllvel=v2_mul(pllvel,.96)
 	plavel=min(plavel,.75)
 	plrot+=plavel
 	plavel=plavel*.85
+	
+	plcam=v2_sub(plpos,campos)
+	newcam=v2(campos.x,campos.y)
+	if not(plcam.x==64) then
+		newcam.x+=(plcam.x-64)*.3
+	end
+	if not(plcam.y==64) then
+		newcam.y+=(plcam.y-64)*.3
+	end
+	camera(newcam.x,newcam.y)
+	campos=newcam
 end
 
 function _draw()
 	cls(0)
 	
+	draw_stars()
+		
 	r={
 		.0625,-.0625,
 		.05,-.05}
@@ -152,6 +189,52 @@ function mapline(a,b,col)
 				b.x+x,
 				b.y+y,
 				col)
+		end
+	end
+end
+
+function draw_stars()
+	local flrx=band(campos.x,-128)
+	local flry=band(campos.y,-128)
+	local comx=(flrx/128)%2
+	local comy=(flry/128)%2
+	
+	draw_stars_partial(
+		comx,comy,
+		0,0,
+		flrx,flry)
+	draw_stars_partial(
+		comx,1-comy,
+		0,32,
+		flrx,flry)
+	draw_stars_partial(
+		1-comx,comy,
+		32,0,
+		flrx,flry)
+	draw_stars_partial(
+		1-comx,1-comy,
+		32,32,
+		flrx,flry)
+end
+
+function draw_stars_partial(
+	cx,cy,
+	sx,sy,
+	flrx,flry)
+	for _x=1,32 do
+		local ix=cx*32+_x
+		local px=_x+sx
+		for _y=1,32 do
+			local iy=cy*32+_y
+			local py=_y+sy
+			local idx=ix*64+iy
+			local star=stars[idx]
+			if(star) then
+				pset(
+					flrx+px*4+star.x,
+					flry+py*4+star.y,
+					5)
+			end
 		end
 	end
 end

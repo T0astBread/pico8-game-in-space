@@ -118,7 +118,7 @@ function _update()
 	if(btn(2)) then
 		if plstasis then
 			angle=plstasis
-			mul=-.15
+			mul=-.05
 		else
 			angle=plrot
 			mul=-.4
@@ -130,7 +130,7 @@ function _update()
 	
 	pllvel=v2_clamp(pllvel,6)
 	plpos=v2_add(plpos,pllvel)
-	pllvel=v2_mul(pllvel,.96)
+	pllvel=v2_mul(pllvel,.98)
 	plavel=min(plavel,.75)
 	plrot+=plavel
 	plavel=plavel*.85

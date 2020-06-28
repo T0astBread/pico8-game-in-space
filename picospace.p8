@@ -128,6 +128,8 @@ function _update()
 			v2_mul(v2_rot(angle),mul))
 	end
 	
+	if(btn(3)) pllvel=v2_mul(pllvel,.95)
+
 	pllvel=v2_clamp(pllvel,6)
 	plpos=v2_add(plpos,pllvel)
 	pllvel=v2_mul(pllvel,.98)

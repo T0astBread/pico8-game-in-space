@@ -2,7 +2,6 @@ pico-8 cartridge // http://www.pico-8.com
 version 27
 __lua__
 -- vector functions
-pi=3.14159
 
 function v2(x,y)
 	return {x=x,y=y}
@@ -92,12 +91,14 @@ function _update()
 	if(btn(2)) then
 		if plstasis then
 			angle=plstasis
+			mul=-.25
 		else
 			angle=plrot
+			mul=-.4
 		end
 		pllvel=v2_add(
 			pllvel,
-			v2_mul(v2_rot(angle),-.4))
+			v2_mul(v2_rot(angle),mul))
 	end
 	
 	pllvel=v2_clamp(pllvel,6)

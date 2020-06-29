@@ -73,117 +73,122 @@ function v2_ceil(vec)
 end
 
 -->8
-plpos=v2(100,100)
-pllvel=v2(0,0)
-plrot=0
-plstasis=nil
-plavel=0
-plaaccel=.006
+-- player
 
-campos=v2(0,0)
+pl_pos=v2(100,100)
+pl_lin_vel=v2(0,0)
+pl_rot=0
+pl_ang_vel=0
+pl_stasis=nil
 
-stars={}
-for x=1,64 do
-	for y=1,64 do
-		if(rnd(3) > 2.8) then
-			add(stars,v2(
-				rnd(4),
-				rnd(4)))
-		else
-			add(stars,false)
-		end
-	end
-end
-
-function _update()
-	campos=v2(
-		peek2(0x5f28),
-		peek2(0x5f2a))
-	
-	b0=btn(0)
-	b1=btn(1)
+function pl_update()
+	-- steering & stasis
+	local b0=btn(0)
+	local b1=btn(1)
 	if(b0 and b1) then
-		if not(plstasis) then
-			plstasis=v2_angle(pllvel)+.25
+		if not(pl_stasis) then
+			pl_stasis=
+				v2_angle(pl_lin_vel)+.25
 		end
 	else
-		plstasis=nil
+		local ang_accel=.006
+		pl_stasis=nil
 		if b0 then
-			plavel-=plaaccel
+			pl_ang_vel-=ang_accel
 		elseif b1 then
-	 	plavel+=plaaccel
+	 	pl_ang_vel+=ang_accel
 	 end
  end
 
+	-- thrust
 	if(btn(2)) then
-		if plstasis then
-			angle=plstasis
+		local angle
+		local mul
+		if pl_stasis then
+			angle=pl_stasis
 			mul=-.05
 		else
-			angle=plrot
+			angle=pl_rot
 			mul=-.4
 		end
-		pllvel=v2_add(
-			pllvel,
+		pl_lin_vel=v2_add(
+			pl_lin_vel,
 			v2_mul(v2_rot(angle),mul))
 	end
-	
-	if(btn(3)) pllvel=v2_mul(pllvel,.95)
 
-	pllvel=v2_clamp(pllvel,6)
-	plpos=v2_add(plpos,pllvel)
-	pllvel=v2_mul(pllvel,.98)
-	plavel=min(plavel,.75)
-	plrot+=plavel
-	plavel=plavel*.85
+	-- handbrake
+	if(btn(3)) pl_lin_vel=v2_mul(pl_lin_vel,.95)
+
+ -- clamp,apply,decrease linear velocity
+	pl_lin_vel=v2_clamp(pl_lin_vel,6)
+	pl_pos=v2_add(pl_pos,pl_lin_vel)
+	pl_lin_vel=v2_mul(pl_lin_vel,.98)
 	
-	plcam=v2_sub(plpos,campos)
-	newcam=v2(campos.x,campos.y)
-	if not(plcam.x==64) then
-		newcam.x+=(plcam.x-64)*.3
-	end
-	if not(plcam.y==64) then
-		newcam.y+=(plcam.y-64)*.3
-	end
-	camera(newcam.x,newcam.y)
-	campos=newcam
+ -- clamp,apply,decrease angular velocity
+	pl_ang_vel=min(pl_ang_vel,.75)
+	pl_rot+=pl_ang_vel
+	pl_ang_vel=pl_ang_vel*.85
 end
 
-function _draw()
-	cls(0)
+function pl_draw()
+--[[
+	how this works:
 	
-	draw_stars()
-		
-	r={
+	angles holds angle values for
+	points in the player sprite.
+
+	the first two points are the
+	bottom points in the player
+	triangle, the next two are the
+	origin points for the exhaust
+	streams.
+
+	points are calculated from
+	angles. the first point is the
+	top point in the player
+	triangle which is fixed at the
+	player position.
+]]
+	local angles={
 		.0625,-.0625,
 		.05,-.05}
-	p={plpos}
-	for ri in all(r) do
-		add(p,v2_add(
+	local points={pl_pos}
+
+	-- calculate points from angles
+	for angle in all(angles) do
+		add(points,v2_add(
 			v2_mul(
-				v2_rot(ri+plrot),
+				v2_rot(angle+pl_rot),
 				5),
-			plpos))
+			pl_pos))
 	end
-	
+
+	-- draw exhaust streams
 	if btn(2) then
 		local col=12
 		local mul=-1
-		if(plstasis) then
+		if(pl_stasis) then
 			col=6
 			mul=-.5
 		end
-		pdelta=v2_mul(pllvel,mul)
+		local vel_delta=
+			v2_mul(pl_lin_vel,mul)
 		for i=4,5 do
-			pi=p[i]
-			pi_=v2_add(pi,pdelta)
-			mapline(pi,pi_,col)
+			local p0=points[i]
+			local p1=v2_add(p0,vel_delta)
+			mapline(p0,p1,col)
 		end
 	end
 	
+	-- draw player triangle
 	for i=1,3 do
-		p1=p[i]
-		if(i==3) p2=p[1] else p2=p[i+1]
+		local p1=points[i]
+		local p2
+		if(i==3) then
+			p2=points[1]
+		else
+			p2=points[i+1]
+		end
 		mapline(p1,p2,7)
 	end
 end
@@ -199,6 +204,53 @@ function mapline(a,b,col)
 				col)
 		end
 	end
+end
+
+-->8
+-- main
+
+campos=v2(0,0)
+
+stars={}
+-- generate stars
+for x=1,64 do
+	for y=1,64 do
+		if(rnd(3) > 2.8) then
+			add(stars,v2(
+				rnd(4),
+				rnd(4)))
+		else
+			add(stars,false)
+		end
+	end
+end
+
+function _update()
+	-- fetch campos
+	campos=v2(
+		peek2(0x5f28),
+		peek2(0x5f2a))
+
+	pl_update()
+
+	-- update campos to follow player
+	local pl2cam=v2_sub(
+		pl_pos,campos)
+	local newcam=v2(campos.x,campos.y)
+	if not(pl2cam.x==64) then
+		newcam.x+=(pl2cam.x-64)*.3
+	end
+	if not(pl2cam.y==64) then
+		newcam.y+=(pl2cam.y-64)*.3
+	end
+	camera(newcam.x,newcam.y)
+	campos=newcam
+end
+
+function _draw()
+	cls(0)
+	draw_stars()
+	pl_draw()
 end
 
 function draw_stars()
@@ -242,7 +294,7 @@ function draw_stars_partial(
 					flrx+px*4+star.x,
 					flry+py*4+star.y)
 				local p2=v2_add(
-					p, v2_mul(pllvel,-.85))
+					p, v2_mul(pl_lin_vel,-.85))
 				line(
 					p.x,p.y,
 					p2.x,p2.y,

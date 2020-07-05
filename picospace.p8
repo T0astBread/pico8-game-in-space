@@ -82,7 +82,7 @@ pl_ang_vel=0
 pl_stasis=nil
 
 pl_bullets={}
-pl_shoot_left=true
+pl_shooting_side=1
 
 function pl_update()
 	-- steering & stasis
@@ -134,22 +134,23 @@ function pl_update()
 
 	-- shoot
 	if btn(4) and flr(time()*20)%2==0 then
-		local rot_vel=v2_rot(pl_rot)
-		local offset=1.5
-		if(pl_shoot_left) offset*=-1
-		pl_shoot_left=not pl_shoot_left
+		local offset=1.5*pl_shooting_side
+		pl_shooting_side*=-1
 		local offset_vec=
 			v2_add(
 				v2_mul(
 					v2_rot(pl_rot+.25),
 					1.8*offset),
-				v2_mul(rot_vel,14))
+				v2_mul(v2_rot(pl_rot),14))
+		local shooting_dir=v2_rot(
+			pl_rot+
+			(rnd(.04)-.02)*pl_shooting_side)
 		add(pl_bullets,{
 			pos=v2_add(
 				pl_pos,
 				offset_vec),
 			vel=v2_mul(
-				rot_vel,
+				shooting_dir,
 				min(
 					-2.5*v2_mag(pl_lin_vel),
 					-10)),
@@ -157,7 +158,7 @@ function pl_update()
 		})
 		pl_lin_vel=v2_add(
 			pl_lin_vel,
-			v2_mul(rot_vel,.3))
+			v2_mul(shooting_dir,.3))
 		camshake(2,4)
 		sfx(0)
 	end

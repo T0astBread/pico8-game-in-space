@@ -81,6 +81,8 @@ pl_rot=0
 pl_ang_vel=0
 pl_stasis=nil
 
+pl_bullets={}
+
 function pl_update()
 	-- steering & stasis
 	local b0=btn(0)
@@ -123,14 +125,51 @@ function pl_update()
 	pl_lin_vel=v2_clamp(pl_lin_vel,6)
 	pl_pos=v2_add(pl_pos,pl_lin_vel)
 	pl_lin_vel=v2_mul(pl_lin_vel,.98)
-	
+
  -- clamp,apply,decrease angular velocity
 	pl_ang_vel=min(pl_ang_vel,.75)
 	pl_rot+=pl_ang_vel
 	pl_ang_vel=pl_ang_vel*.85
+
+	-- shoot
+	if btn(4) and flr(time()*20)%2==0 then
+		local rot_vel=v2_rot(pl_rot)
+		add(pl_bullets,{
+			pos=pl_pos,
+			vel=v2_mul(rot_vel,-10),
+			ttl=10
+		})
+		pl_lin_vel=v2_add(
+			pl_lin_vel,
+			v2_mul(rot_vel,.3))
+		camshake(2,4)
+		sfx(0)
+	end
+
+	-- update bullets
+	for bullet in all(pl_bullets) do
+		bullet.ttl-=1
+		if(bullet.ttl>0) then
+			bullet.pos=v2_add(
+				bullet.pos,
+				bullet.vel)
+		else
+			del(pl_bullets,bullet)
+		end
+	end
 end
 
 function pl_draw()
+	-- draw bullets
+	for bullet in all(pl_bullets) do
+		local p0=bullet.pos
+		local p=v2_mul(v2_norm(
+			v2_sub(bullet.pos,pl_pos)),
+			v2_mag(bullet.vel))
+		local p1=v2_sub(p0,p)
+		line(p0.x,p0.y,p1.x,p1.y,11)
+	end
+
 --[[
 	how this works:
 	
@@ -473,3 +512,6 @@ __label__
 82228222828282228888822282228288822282228888888888888888888888888888888888888888888888888222822288828288822282228882822288822288
 88888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888
 
+__sfx__
+000100001a75014750117500e7500b7500a7500775005750047500275000750067000470002700007000970008700077000670005700057000470003700037000270001700007000070000700007000070000700
+000100003b6003a6003a60038600376003660035600346003360032600326003160032600316002f6002e6002d6002b6002960028600276002560023600216001f6001e6001d6001c6001c6001c6001b6001a600

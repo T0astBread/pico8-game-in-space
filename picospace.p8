@@ -210,6 +210,7 @@ end
 -- main
 
 campos=v2(0,0)
+camshakes={}
 
 stars={}
 -- generate stars
@@ -230,6 +231,11 @@ function _update()
 	campos=v2(
 		peek2(0x5f28),
 		peek2(0x5f2a))
+	for cs in all(camshakes) do
+		campos=v2_sub(
+			campos,
+			cs.offset)
+	end
 
 	pl_update()
 
@@ -243,6 +249,23 @@ function _update()
 	if not(pl2cam.y==64) then
 		newcam.y+=(pl2cam.y-64)*.3
 	end
+
+	-- add camshakes to campos
+	for cs in all(camshakes) do
+		cs.ttl-=1
+		if(cs.ttl>0) then
+			cs.offset=v2(
+				rnd(cs.intensity),
+				rnd(cs.intensity))
+			newcam=v2_add(
+				newcam,
+				cs.offset)
+		else
+			del(camshakes,cs)
+		end
+	end
+
+	-- apply new campos
 	camera(newcam.x,newcam.y)
 	campos=newcam
 end
@@ -302,6 +325,14 @@ function draw_stars_partial(
 			end
 		end
 	end
+end
+
+function camshake(intens,dur)
+	add(camshakes,{
+		intensity=intens,
+		ttl=dur,
+		offset=v2(0,0)
+	})
 end
 
 __gfx__
